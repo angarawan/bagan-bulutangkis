@@ -54,9 +54,42 @@
       @media print {
         .no-print { display: none !important; }
         .print-only { display: block !important; }
-        body { background: white !important; color: black !important; }
-        .print-card { background: white !important; border: 1px solid #cbd5e1 !important; color: black !important; }
-        .print-text { color: black !important; }
+        body, #root, main, div, header { 
+          background-color: #ffffff !important; 
+          background: #ffffff !important; 
+          color: #0f172a !important; 
+        }
+        .print-card { background: #ffffff !important; border: 1px solid #94a3b8 !important; color: #0f172a !important; }
+        .print-text { color: #0f172a !important; }
+
+        /* Force dark background elements to white for ink-saving printing */
+        .bg-slate-800, .bg-slate-900, .bg-slate-950, .bg-slate-800\/80, .bg-slate-800\/90, .bg-slate-900\/60, .bg-slate-900\/80, .bg-emerald-950\/40 {
+          background-color: #ffffff !important;
+          background: #ffffff !important;
+        }
+        .border, .border-slate-700, .border-slate-800, .border-slate-600, .border-slate-700\/80, .border-slate-700\/60 {
+          border-color: #64748b !important;
+        }
+        .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-amber-300, .text-amber-400 {
+          color: #0f172a !important;
+        }
+        .text-emerald-400, .text-emerald-300, .text-emerald-500 {
+          color: #047857 !important;
+          font-weight: 700 !important;
+        }
+        .border-emerald-500\/50, .border-emerald-500, .border-amber-500 {
+          border-color: #334155 !important;
+        }
+        .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+          box-shadow: none !important;
+        }
+        .overflow-x-auto {
+          overflow: visible !important;
+        }
+        @page {
+          size: landscape;
+          margin: 1cm;
+        }
       }
     </style>
 </head>
@@ -641,7 +674,8 @@
         }, [matches]);
 
         const thirdPlaceMatch = matches.find(m => m.isThirdPlace);
-        const totalRounds = Object.keys(rounds).length;
+        const roundKeys = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+        const totalRounds = roundKeys.length;
 
         const getRoundTitle = (roundNum, total) => {
           if (roundNum === total) return 'FINAL';
@@ -654,40 +688,44 @@
         const finalMatch = matches.find(m => m.round === totalRounds && !m.isThirdPlace);
         const champion = finalMatch && finalMatch.winnerId ? getPlayer(finalMatch.winnerId) : null;
 
+        // Compact slot height in pixels for Round 1
+        const BASE_SLOT_HEIGHT = 110;
+
         return (
           <div className="space-y-6">
             {/* Champion Banner */}
             {champion && !champion.isTBD && !champion.isBye && (
-              <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 border border-amber-500/40 rounded-2xl p-6 text-center shadow-xl animate-fade-in">
-                <div className="inline-flex p-3 bg-amber-500/20 text-amber-400 rounded-full mb-2">
+              <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 border border-amber-500/40 rounded-2xl p-6 text-center shadow-xl animate-fade-in print:bg-white print:border-slate-400">
+                <div className="inline-flex p-3 bg-amber-500/20 text-amber-400 rounded-full mb-2 print:text-amber-600">
                   <Icons.Trophy />
                 </div>
-                <h2 className="text-2xl font-extrabold text-amber-300">JUARA TURNAMEN</h2>
-                <p className="text-xl font-bold text-white mt-1">{champion.name}</p>
-                <p className="text-xs text-amber-400/80 font-medium">{champion.club}</p>
+                <h2 className="text-2xl font-extrabold text-amber-300 print:text-amber-700">JUARA TURNAMEN</h2>
+                <p className="text-xl font-bold text-white print:text-slate-900 mt-1">{champion.name}</p>
+                <p className="text-xs text-amber-400/80 print:text-slate-600 font-medium">{champion.club}</p>
               </div>
             )}
 
-            {/* Scrollable Bracket Tree Area */}
+            {/* Scrollable Aligned Bracket Tree Area */}
             <div className="overflow-x-auto pb-8 pt-2">
-              <div className="inline-flex min-w-full space-x-8 items-start px-2">
-                {Object.keys(rounds).map(roundKey => {
-                  const rNum = parseInt(roundKey);
-                  const roundMatchesList = rounds[roundKey];
+              <div className="inline-flex min-w-full space-x-8 items-start px-2 py-4">
+                {roundKeys.map(rNum => {
+                  const roundMatchesList = rounds[rNum];
+                  // Slot height doubles each round to keep match cards centered with feeder matches
+                  const slotHeight = BASE_SLOT_HEIGHT * Math.pow(2, rNum - 1);
 
                   return (
-                    <div key={roundKey} className="flex-1 min-w-[280px] space-y-4">
+                    <div key={rNum} className="flex-1 min-w-[210px] flex flex-col">
                       {/* Round Header */}
-                      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 text-center">
-                        <h3 className="text-xs font-bold text-emerald-400 tracking-wider uppercase">
+                      <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-center mb-3 print:bg-white print:border-slate-400">
+                        <h3 className="text-xs font-bold text-emerald-400 print:text-emerald-700 tracking-wider uppercase">
                           {getRoundTitle(rNum, totalRounds)}
                         </h3>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{roundMatchesList.length} Pertandingan</p>
+                        <p className="text-[10px] text-slate-400 print:text-slate-600 mt-0.5">{roundMatchesList.length} Pertandingan</p>
                       </div>
 
-                      {/* Match Cards List */}
-                      <div className="space-y-6">
-                        {roundMatchesList.map(match => {
+                      {/* Aligned Match Slots Container */}
+                      <div className="flex flex-col">
+                        {roundMatchesList.map((match, matchIndex) => {
                           const p1 = getPlayer(match.player1Id);
                           const p2 = getPlayer(match.player2Id);
                           const isCompleted = match.status === 'completed';
@@ -696,57 +734,81 @@
                           return (
                             <div 
                               key={match.id}
-                              onClick={() => !p1.isBye && !p2.isBye && !p1.isTBD && !p2.isTBD && onMatchClick(match)}
-                              className={`relative bg-slate-800 border rounded-xl p-3 transition-all cursor-pointer shadow-md hover:border-emerald-500/60 hover:shadow-emerald-950/30 ${
-                                isLive ? 'border-amber-500 ring-2 ring-amber-500/20' : isCompleted ? 'border-slate-700/80' : 'border-slate-700'
-                              }`}
+                              style={{ height: `${slotHeight}px` }}
+                              className="relative flex flex-col justify-center items-center"
                             >
-                              {/* Match Header Tag */}
-                              <div className="flex justify-between items-center text-[10px] text-slate-400 mb-2 border-b border-slate-700/60 pb-1.5">
-                                <span className="font-semibold text-slate-300">Match #{match.matchNo}</span>
-                                {match.court && <span className="text-emerald-400 font-medium">Lap. {match.court}</span>}
-                                {isLive && <span className="bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold animate-pulse">BERLANGSUNG</span>}
-                                {isCompleted && <span className="text-emerald-400 font-semibold">SELESAI</span>}
-                              </div>
-
-                              {/* Player 1 Slot */}
-                              <div className={`flex items-center justify-between p-2 rounded-lg mb-1 transition-colors ${
-                                match.winnerId === p1.id ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/50 font-bold' : 'bg-slate-900/60 text-slate-200'
-                              }`}>
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  {p1.seed && <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-semibold">[{p1.seed}]</span>}
-                                  <div className="truncate">
-                                    <p className="text-xs truncate">{p1.name}</p>
-                                    {p1.club && <p className="text-[10px] text-slate-400 truncate">{p1.club}</p>}
-                                  </div>
+                              {/* Connector Lines to Next Round */}
+                              {rNum < totalRounds && (
+                                <div className="absolute right-0 top-0 bottom-0 w-4 pointer-events-none translate-x-full z-10">
+                                  {matchIndex % 2 === 0 ? (
+                                    <div className="absolute top-1/2 left-0 w-full h-1/2 border-t-2 border-r-2 border-emerald-500/80 print:border-slate-800 rounded-tr-md" />
+                                  ) : (
+                                    <div className="absolute bottom-1/2 left-0 w-full h-1/2 border-b-2 border-r-2 border-emerald-500/80 print:border-slate-800 rounded-br-md" />
+                                  )}
                                 </div>
-                                {!p1.isBye && !p1.isTBD && (
-                                  <div className="flex space-x-1 text-xs font-mono font-bold">
-                                    <span>{match.score1[0]}</span>
-                                    {match.score1[1] > 0 && <span>-{match.score1[1]}</span>}
-                                    {match.score1[2] > 0 && <span>-{match.score1[2]}</span>}
-                                  </div>
-                                )}
-                              </div>
+                              )}
 
-                              {/* Player 2 Slot */}
-                              <div className={`flex items-center justify-between p-2 rounded-lg transition-colors ${
-                                match.winnerId === p2.id ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/50 font-bold' : 'bg-slate-900/60 text-slate-200'
-                              }`}>
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  {p2.seed && <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-semibold">[{p2.seed}]</span>}
-                                  <div className="truncate">
-                                    <p className="text-xs truncate">{p2.name}</p>
-                                    {p2.club && <p className="text-[10px] text-slate-400 truncate">{p2.club}</p>}
+                              {/* Incoming Line from Previous Round */}
+                              {rNum > 1 && (
+                                <div className="absolute left-0 top-1/2 w-4 -translate-x-full border-t-2 border-emerald-500/80 print:border-slate-800 pointer-events-none z-10" />
+                              )}
+
+                              {/* Compact White Match Card Box */}
+                              <div 
+                                onClick={() => !p1.isBye && !p2.isBye && !p1.isTBD && !p2.isTBD && onMatchClick(match)}
+                                className={`w-full relative bg-white border-2 rounded-lg p-2 transition-all cursor-pointer shadow-sm hover:shadow-md hover:border-emerald-500 print:border-slate-400 ${
+                                  isLive ? 'border-amber-500 ring-2 ring-amber-400/40' : isCompleted ? 'border-emerald-600/70' : 'border-slate-300'
+                                }`}
+                              >
+                                {/* Match Header Tag */}
+                                <div className="flex justify-between items-center text-[10px] text-slate-500 mb-1 border-b border-slate-200 pb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    {match.court && <span className="text-emerald-700 font-bold">Lap. {match.court}</span>}
+                                    {isLive && <span className="bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-bold animate-pulse text-[9px]">LIVE</span>}
+                                    {isCompleted && <span className="text-emerald-700 font-bold text-[9px]">SELESAI</span>}
                                   </div>
+                                  <span className="font-bold text-slate-700">Match #{match.matchNo}</span>
                                 </div>
-                                {!p2.isBye && !p2.isTBD && (
-                                  <div className="flex space-x-1 text-xs font-mono font-bold">
-                                    <span>{match.score2[0]}</span>
-                                    {match.score2[1] > 0 && <span>-{match.score2[1]}</span>}
-                                    {match.score2[2] > 0 && <span>-{match.score2[2]}</span>}
+
+                                {/* Player 1 Slot */}
+                                <div className={`flex items-center justify-between px-2 py-1 rounded transition-colors mb-1 ${
+                                  match.winnerId === p1.id ? 'bg-emerald-100 text-emerald-950 font-bold border border-emerald-300' : 'bg-slate-100 text-slate-800'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 overflow-hidden">
+                                    {p1.seed && <span className="text-[9px] bg-slate-200 text-slate-700 px-1 rounded font-semibold">[{p1.seed}]</span>}
+                                    <div className="truncate">
+                                      <p className="text-[11px] truncate font-semibold text-slate-900">{p1.name}</p>
+                                      {p1.club && p1.club !== '-' && <p className="text-[9px] text-slate-500 truncate">{p1.club}</p>}
+                                    </div>
                                   </div>
-                                )}
+                                  {!p1.isBye && !p1.isTBD && (
+                                    <div className="flex space-x-0.5 text-[11px] font-mono font-bold text-slate-900 ml-1">
+                                      <span>{match.score1[0]}</span>
+                                      {match.score1[1] > 0 && <span>-{match.score1[1]}</span>}
+                                      {match.score1[2] > 0 && <span>-{match.score1[2]}</span>}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Player 2 Slot */}
+                                <div className={`flex items-center justify-between px-2 py-1 rounded transition-colors ${
+                                  match.winnerId === p2.id ? 'bg-emerald-100 text-emerald-950 font-bold border border-emerald-300' : 'bg-slate-100 text-slate-800'
+                                }`}>
+                                  <div className="flex items-center gap-1.5 overflow-hidden">
+                                    {p2.seed && <span className="text-[9px] bg-slate-200 text-slate-700 px-1 rounded font-semibold">[{p2.seed}]</span>}
+                                    <div className="truncate">
+                                      <p className="text-[11px] truncate font-semibold text-slate-900">{p2.name}</p>
+                                      {p2.club && p2.club !== '-' && <p className="text-[9px] text-slate-500 truncate">{p2.club}</p>}
+                                    </div>
+                                  </div>
+                                  {!p2.isBye && !p2.isTBD && (
+                                    <div className="flex space-x-0.5 text-[11px] font-mono font-bold text-slate-900 ml-1">
+                                      <span>{match.score2[0]}</span>
+                                      {match.score2[1] > 0 && <span>-{match.score2[1]}</span>}
+                                      {match.score2[2] > 0 && <span>-{match.score2[2]}</span>}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
@@ -760,18 +822,18 @@
 
             {/* Third Place Match Card */}
             {thirdPlaceMatch && (
-              <div className="mt-8 max-w-md mx-auto bg-slate-800/90 border border-amber-500/30 rounded-xl p-4 text-center">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">PEREBUTAN JUARA 3</h4>
+              <div className="mt-6 max-w-sm mx-auto bg-slate-800/90 border border-amber-500/30 rounded-xl p-3 text-center print:bg-white print:border-slate-400">
+                <h4 className="text-xs font-bold text-amber-400 print:text-amber-700 uppercase tracking-wider mb-2">PEREBUTAN JUARA 3</h4>
                 <div 
                   onClick={() => onMatchClick(thirdPlaceMatch)}
-                  className="bg-slate-900 p-3 rounded-lg border border-slate-700 hover:border-amber-500/50 cursor-pointer transition-all"
+                  className="bg-white p-2 rounded-lg border-2 border-slate-300 hover:border-amber-500 cursor-pointer transition-all"
                 >
-                  <div className="flex justify-between items-center text-xs text-slate-300">
-                    <span>{getPlayer(thirdPlaceMatch.player1Id).name}</span>
-                    <span className="font-mono font-bold text-amber-400">
-                      {thirdPlaceMatch.score1.join(' ')} vs {thirdPlaceMatch.score2.join(' ')}
+                  <div className="flex justify-between items-center text-xs text-slate-900">
+                    <span className="font-semibold">{getPlayer(thirdPlaceMatch.player1Id).name}</span>
+                    <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {thirdPlaceMatch.score1.join('-')} vs {thirdPlaceMatch.score2.join('-')}
                     </span>
-                    <span>{getPlayer(thirdPlaceMatch.player2Id).name}</span>
+                    <span className="font-semibold">{getPlayer(thirdPlaceMatch.player2Id).name}</span>
                   </div>
                 </div>
               </div>
